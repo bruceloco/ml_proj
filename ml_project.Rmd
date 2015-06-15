@@ -1,0 +1,54 @@
+---
+title: "ML_BrunoGomes"
+author: "Bruno Gomes"
+date: "14 June 2015"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit**c button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r}
+
+# enable hardware acceleration
+library(doParallel)
+cl<-makeCluster(detectCores())
+registerDoParallel(cl)
+
+```
+
+```{r}
+# load test and train sets
+
+testing<-read.csv("pml-testing.csv",na.strings = "NA")
+training<-read.csv("pml-training.csv",na.strings = "NA")
+# clean the data
+str(training)
+# avg/stdev is self contained information, all other information which is mostly NA's will not be selected, so a list will be created with the column names to use:
+list_use <-c("roll_belt","pitch_belt","yaw_belt","total_accel_belt","gyros_belt_x","gyros_belt_y","gyros_belt_z","accel_belt_x","accel_belt_y","accel_belt_z","magnet_belt_x","magnet_belt_y","magnet_belt_z","roll_arm","pitch_arm","yaw_arm","total_accel_arm","gyros_arm_x","gyros_arm_y","gyros_arm_z","accel_arm_x","accel_arm_y","accel_arm_z","magnet_arm_x","magnet_arm_y","magnet_arm_z","roll_dumbbell","pitch_dumbbell","yaw_dumbbell","total_accel_dumbbell","gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z","accel_dumbbell_x","accel_dumbbell_y","accel_dumbbell_z","magnet_dumbbell_x","magnet_dumbbell_y","magnet_dumbbell_z","roll_forearm","pitch_forearm","yaw_forearm","total_accel_forearm","gyros_forearm_x","gyros_forearm_y","gyros_forearm_z","accel_forearm_x","accel_forearm_y","accel_forearm_z","magnet_forearm_x","magnet_forearm_y","magnet_forearm_z","classe")
+testing<-testing[,list_use[-53]]
+training<-training[,list_use]
+
+# now create a cross validation set based on the training set, ie: split it into training/test sets
+set.seed(33737) 
+idx_train<-createDataPartition(training$classe, p=0.6, list=FALSE)
+strain<-training[idx_train,]
+stest<-training[-idx_train,]
+mtree<-train(classe ~., data=strain, method="rf")
+prtree<-predict(mtree, stest)
+mpca <-train(classe ~., data=strain, method="rf",preProcess="pca")
+
+confusionMatrix(stest$classe,prtree)$overall['Accuracy']
+#
+
+```
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
