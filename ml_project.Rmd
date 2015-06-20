@@ -65,7 +65,7 @@ training<-training[,list_use]
 ## Creating the model and predicting  
 <br> 
 A training set *strain* and a validation set *stest* will be created to create a prediction to be applied to the final "testing" data. 
-In this case, I decided to use random forests. I have tried PCA, and although the accuracy was quite good, together with the processing time, I prefer to use random forest for their robustness and resistance to correlation.
+In this case, I decided to use random forests for their robustness and resistance to correlation.
 
 ```{r, cache=TRUE}
 set.seed(33737) 

@@ -266,7 +266,7 @@ training&lt;-training[,list_use]</code></pre>
 </div>
 <div id="creating-the-model-and-predicting" class="section level2">
 <h2>Creating the model and predicting</h2>
-<p><br> A training set <em>strain</em> and a validation set <em>stest</em> will be created to create a prediction to be applied to the final “testing” data. In this case, I decided to use random forests. I have tried PCA, and although the accuracy was quite good, together with the processing time, I prefer to use random forest for their robustness and resistance to correlation.</p>
+<p><br> A training set <em>strain</em> and a validation set <em>stest</em> will be created to create a prediction to be applied to the final “testing” data. In this case, I decided to use random forests for their robustness and resistance to correlation.</p>
 <pre class="r"><code>set.seed(33737) 
 idx_train&lt;-createDataPartition(training$classe, p=0.6, list=FALSE)
 strain&lt;-training[idx_train,]
