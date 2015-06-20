@@ -1,53 +1,90 @@
 ---
-title: "ML_BrunoGomes"
+title: "Practical Machine learning for Activity identification"
 author: "Bruno Gomes"
 date: "14 June 2015"
 output: html_document
 ---
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+##Introduction 
+<br> 
 
-When you click the **Knit**c button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+This project attempts to predict the types of arm movements based on the correct way of perfoming dumbell lifts **class A** and the other classes which correspond to the wrong way of lifting dumbells:  
+* **class B** - throwing the elbows to the front  
+* **class C** - lifting the dumbbell only halfway  
+* **class D** - lowering the dumbbell only halfway  
+* **class E** - throwing the hips to the front  
 
+More information is available about the origin of the data and this document on: 
+http://groupware.les.inf.puc-rio.br/har
 
-```{r}
+The required libraries for this project are the following: 
 
-# enable hardware acceleration
+```{r,warning=FALSE, message=FALSE}
+library(lattice)
+library(ggplot2)
+library(randomForest)
+library(caret)
+```  
+  
+In case you can have multiple core CPU's in both the main CPU and graphics cards with OpenCL(most AMD cards and lately most Nvidia cards as well), you will want to enable parallel processing, otherwise it can be quite time consuming. 
+
+```{r,warning=FALSE, message=FALSE}
+library(foreach)
+library(iterators)
+library(parallel)
 library(doParallel)
+# enable hardware acceleration
 cl<-makeCluster(detectCores())
 registerDoParallel(cl)
+```  
+<br>
 
-```
+## Data cleaning and preprocessing  
+<br> 
+First the data must be loaded and evaluated, download the data from the repository as it will not change in time.  
 
 ```{r}
 # load test and train sets
-
 testing<-read.csv("pml-testing.csv",na.strings = "NA")
 training<-read.csv("pml-training.csv",na.strings = "NA")
-# clean the data
-str(training)
+
+# view the data structure
 str(training, list.len = ncol(training))
-# avg/stdev is self contained information, all other information which is mostly NA's will not be selected, so a list will be created with the column names to use:
+``` 
+
+As seen above there are 160 variables, but the majority of them have null values and others have self contained information and frequency distributions, like avg(average), stdev(standard deviation), kurtosis, etc.  
+So we shall remove these columns.
+
+```{r}
 list_use <-c("roll_belt","pitch_belt","yaw_belt","total_accel_belt","gyros_belt_x","gyros_belt_y","gyros_belt_z","accel_belt_x","accel_belt_y","accel_belt_z","magnet_belt_x","magnet_belt_y","magnet_belt_z","roll_arm","pitch_arm","yaw_arm","total_accel_arm","gyros_arm_x","gyros_arm_y","gyros_arm_z","accel_arm_x","accel_arm_y","accel_arm_z","magnet_arm_x","magnet_arm_y","magnet_arm_z","roll_dumbbell","pitch_dumbbell","yaw_dumbbell","total_accel_dumbbell","gyros_dumbbell_x","gyros_dumbbell_y","gyros_dumbbell_z","accel_dumbbell_x","accel_dumbbell_y","accel_dumbbell_z","magnet_dumbbell_x","magnet_dumbbell_y","magnet_dumbbell_z","roll_forearm","pitch_forearm","yaw_forearm","total_accel_forearm","gyros_forearm_x","gyros_forearm_y","gyros_forearm_z","accel_forearm_x","accel_forearm_y","accel_forearm_z","magnet_forearm_x","magnet_forearm_y","magnet_forearm_z","classe")
 testing<-testing[,list_use[-53]]
 training<-training[,list_use]
+```  
+<br>  
 
-```
+## Creating the model and predicting  
+<br> 
+A training set *strain* and a validation set *stest* will be created to create a prediction to be applied to the final "testing" data. 
+In this case, I decided to use random forests. I have tried PCA, and although the accuracy was quite good, together with the processing time, I prefer to use random forest for their robustness and resistance to correlation.
 
-```{r}
-# now create a cross validation set based on the training set, ie: split it into training/test sets
+```{r, cache=TRUE}
 set.seed(33737) 
 idx_train<-createDataPartition(training$classe, p=0.6, list=FALSE)
 strain<-training[idx_train,]
 stest<-training[-idx_train,]
 mtree<-train(classe ~., data=strain, method="rf")
 prtree<-predict(mtree, stest)
-mpca <-train(classe ~., data=strain, method="rf",preProcess="pca")
-```
+```  
+<br>  
 
-Estimate Accuracy and out of band error
+## Model evaluation and conclusion  
+<br> 
+Here we shall estimate the accuracy and out of sample error to evaluate the efficiency of the model.  
+
 ```{r}
 accuracy<-confusionMatrix(stest$classe,prtree)$overall['Accuracy']
-out_band_error<- 1-accuracy
-```
+out_sample_error<- 1-accuracy
+```  
+  
+So as it can be seen, an accuracy of `r accuracy` is impressingly high, although we might be overfitting the data somewhat, and the out of sample error is `r out_sample_error` 
 
